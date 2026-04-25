@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/friday",
+      "destination": "/api/friday.js"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
+  ]
+}
