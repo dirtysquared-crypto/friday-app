@@ -498,6 +498,9 @@ async function askGPT(userInput){
   document.getElementById('ai-status').textContent='Thinking';
   showThinking();
 
+  // Add user message BEFORE sending so GPT has full context
+  appendHistory('user', userInput);
+
   try{
     const res=await api('/api/chat',{
       method:'POST',
@@ -524,13 +527,11 @@ async function askGPT(userInput){
 
     // Check for memory trigger
     checkForMemory(userInput, reply);
-
-    appendHistory('user', userInput);
     appendHistory('assistant', reply);
-
     speak(reply);
 
   }catch(e){
+    history.pop(); // remove user message if call failed
     document.getElementById('ai-status').textContent='Error';
     log('Error: '+e.message,'sys');
     const msg=e.message.includes('quota')||e.message.includes('insufficient')
