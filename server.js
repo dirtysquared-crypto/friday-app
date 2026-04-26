@@ -26,7 +26,7 @@ try {
 }
 
 // ========== AUTH ==========
-const APP_PASSWORD = process.env.APP_PASSWORD || 'friday2024';
+const APP_PASSWORD = process.env.APP_PASSWORD ='friday123';
 
 app.post('/api/login', (req, res) => {
   const { password } = req.body;
