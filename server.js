@@ -26,10 +26,7 @@ try {
 }
 
 // ========== AUTH ==========
-const APP_PASSWORD = 'friday123';
-process.env.OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
-console.log('OpenAI key length:', (process.env.OPENAI_API_KEY || '').length);
-console.log('Key starts with:', (process.env.OPENAI_API_KEY || '').substring(0, 20));
+const APP_PASSWORD = process.env.APP_PASSWORD || 'friday2024';
 
 app.post('/api/login', (req, res) => {
   const { password } = req.body;
@@ -191,9 +188,14 @@ app.post('/api/tts', authMiddleware, async (req, res) => {
       })
     });
 
-    if (!response.ok) throw new Error('TTS failed');
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('TTS error:', errText);
+      throw new Error('TTS failed: ' + errText);
+    }
 
-    const buffer = await response.buffer();
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
     res.set('Content-Type', 'audio/mpeg');
     res.send(buffer);
 
