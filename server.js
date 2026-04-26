@@ -91,9 +91,11 @@ ${memBlock}`;
 
   try {
     const fetch = (await import('node-fetch')).default;
+    const key = (process.env.OPENAI_API_KEY || '').trim();
+    console.log('Using key length:', key.length, 'prefix:', key.substring(0,10));
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${OPENAI_KEY}`, 'Content-Type': 'application/json' },
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role:'system', content: SYSTEM }, ...(messages||[])], max_tokens: 600, temperature: 0.85 })
     });
     if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'OpenAI error'); }
@@ -106,9 +108,10 @@ app.post('/api/tts', auth, async (req, res) => {
   const { text, voice = 'nova', speed = 1.0 } = req.body;
   try {
     const fetch = (await import('node-fetch')).default;
+    const key = (process.env.OPENAI_API_KEY || '').trim();
     const response = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${OPENAI_KEY}`, 'Content-Type': 'application/json' },
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'tts-1', input: text, voice, speed })
     });
     if (!response.ok) { const t = await response.text(); console.error('TTS fail:', t); throw new Error('TTS failed'); }
