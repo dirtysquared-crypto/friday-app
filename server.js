@@ -96,7 +96,7 @@ ${memBlock}`;
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role:'system', content: SYSTEM }, ...(messages||[])], max_tokens: 600, temperature: 0.85 })
+      body: JSON.stringify({ model: 'gpt-4o', messages: [{ role:'system', content: SYSTEM }, ...(messages||[])], max_tokens: 600, temperature: 0.85 })
     });
     if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'OpenAI error'); }
     const data = await response.json();
