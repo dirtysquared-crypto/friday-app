@@ -159,7 +159,7 @@ body.tablet .status-dots{width:200px;height:200px}
 <button class="mode-toggle" onclick="toggleMode()" id="mode-toggle-btn">TABLET</button>
 
 <!-- WAKE INDICATOR -->
-<div class="wake-indicator" id="wake-indicator">LISTENING - SAY "HEY FRIDAY"</div>
+<div class="wake-indicator" id="wake-indicator">LISTENING...</div>
 
 <!-- LOGIN -->
 <div class="login-overlay" id="login-overlay">
@@ -443,6 +443,11 @@ async function speak(text){
   document.getElementById('reactor').classList.add('active');
   document.getElementById('voice-status').textContent='Speaking';
 
+  // Pause mic while speaking to prevent feedback
+  if(listening && recognition){
+    try{ recognition.stop(); }catch(e){}
+  }
+
   try{
     const res = await api('/api/tts',{
       method:'POST',
@@ -457,6 +462,10 @@ async function speak(text){
       document.getElementById('reactor').classList.remove('active');
       document.getElementById('voice-status').textContent='Ready';
       URL.revokeObjectURL(url);
+      // Resume mic after speaking
+      if(listening && recognition){
+        setTimeout(()=>{ try{ recognition.start(); }catch(e){} }, 800);
+      }
     };
     audio.play();
   }catch(e){
@@ -489,7 +498,7 @@ async function askGPT(userInput){
   try{
     const res=await api('/api/chat',{
       method:'POST',
-      body:JSON.stringify({messages:history, memory})
+      body:JSON.stringify({messages:history, memory, localTime: new Date().toLocaleString('en-US', {weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit',timeZoneName:'short'})})
     });
 
     if(!res.ok){
@@ -531,7 +540,7 @@ async function askGPT(userInput){
 // ===== LOCAL BRAIN =====
 function localBrain(input){
   const q=input.toLowerCase().trim();
-  if(q.match(/^(what('s| is) the |tell me the )?time$/)){ return "It's "+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+", Boss."; }
+  if(q.match(/time|what time|current time|clock/)&&q.length<30){ return "It's "+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+", Boss."; }
   if(q==='hello'||q==='hi'||q==='hey friday'){ return "Yeah, Boss?"; }
   if(q.includes('what day')||q.includes("today's date")||q.includes('what is today')){ return "Today is "+new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+"."; }
   
@@ -584,74 +593,61 @@ function quickCmd(text){
   askGPT(text);
 }
 
-// ===== VOICE RECOGNITION (Hey Friday wake word) =====
+// ===== VOICE RECOGNITION - Push to Talk =====
 function toggleWake(){
   if(listening){
-    recognition&&recognition.stop();
-    listening=false;
+    // Stop listening
+    recognition && recognition.stop();
+    listening = false;
     setModeText('Standby');
     document.getElementById('wake-btn').classList.remove('mic-active');
     document.getElementById('wake-indicator').classList.remove('show');
-    log('Wake mode off.','sys');
     return;
   }
 
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){ speak("Voice recognition isn't supported here, Boss. Try Chrome."); return; }
 
-  recognition=new SR();
-  recognition.continuous=true;
-  recognition.interimResults=false;
-  recognition.lang='en-US';
+  recognition = new SR();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = 'en-US';
 
-  recognition.onstart=()=>{
-    listening=true;
+  recognition.onstart = ()=>{
+    listening = true;
     setModeText('Listening');
     document.getElementById('wake-btn').classList.add('mic-active');
     document.getElementById('wake-indicator').classList.add('show');
-    log('Wake mode armed. Say "Hey Friday" then your command.','sys');
   };
 
-  recognition.onresult=e=>{
-    const transcript=e.results[e.results.length-1][0].transcript.trim();
-    handleVoice(transcript);
+  recognition.onresult = e=>{
+    const transcript = e.results[0][0].transcript.trim();
+    log('Heard: '+transcript, 'user');
+    listening = false;
+    document.getElementById('wake-btn').classList.remove('mic-active');
+    document.getElementById('wake-indicator').classList.remove('show');
+    setModeText('Thinking');
+    const local = localBrain(transcript);
+    if(local){ speak(local); return; }
+    askGPT(transcript);
   };
 
-  recognition.onerror=()=>{
-    listening=false;
+  recognition.onerror = e=>{
+    listening = false;
     setModeText('Standby');
     document.getElementById('wake-btn').classList.remove('mic-active');
     document.getElementById('wake-indicator').classList.remove('show');
-    log('Microphone error. Make sure mic permission is allowed.','sys');
+    log('Mic error: '+e.error, 'sys');
   };
 
-  recognition.onend=()=>{
-    if(listening){ try{ recognition.start(); }catch(e){} }
-    else{ setModeText('Standby'); }
+  recognition.onend = ()=>{
+    listening = false;
+    setModeText('Standby');
+    document.getElementById('wake-btn').classList.remove('mic-active');
+    document.getElementById('wake-indicator').classList.remove('show');
   };
 
   recognition.start();
-}
-
-function handleVoice(text){
-  log('Heard: '+text,'user');
-  const q=text.toLowerCase();
-  // Hey Friday wake word
-  if(q.includes('hey friday')||q.includes('hey, friday')){
-    const cleaned=text.replace(/hey,?\s*friday/ig,'').trim();
-    if(!cleaned){ speak("Yeah, Boss?"); return; }
-    const local=localBrain(cleaned);
-    if(local){ speak(local); return; }
-    askGPT(cleaned);
-  }
-  // Also respond to just "friday" as wake word
-  else if(q.startsWith('friday')){
-    const cleaned=text.replace(/^friday/i,'').trim();
-    if(!cleaned){ speak("Yeah, Boss?"); return; }
-    const local=localBrain(cleaned);
-    if(local){ speak(local); return; }
-    askGPT(cleaned);
-  }
 }
 
 // ===== VOICE SELECTOR =====
