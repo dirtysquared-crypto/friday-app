@@ -169,6 +169,20 @@ app.delete('/api/history', auth, async (req, res) => {
   catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// ========== TEST ENDPOINT ==========
+app.get('/api/keytest', (req, res) => {
+  const k = (process.env.OPENAI_API_KEY || '');
+  res.json({
+    length: k.length,
+    prefix: k.substring(0, 15),
+    suffix: k.substring(k.length - 6),
+    hasNewline: k.includes('\n'),
+    hasCarriageReturn: k.includes('\r'),
+    hasSpace: k.includes(' '),
+    trimmedLength: k.trim().length
+  });
+});
+
 app.get('/api/stock/:ticker', auth, async (req, res) => {
   try {
     const fetch = (await import('node-fetch')).default;
