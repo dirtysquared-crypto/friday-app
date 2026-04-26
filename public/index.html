@@ -318,7 +318,9 @@ async function doLogin(){
 
 async function onLoggedIn(){
   await loadMemory();
-  await loadHistory();
+  // Clear old history from Supabase first, then start fresh
+  try{ await api('/api/history',{method:'DELETE'}); }catch(e){}
+  history = []; // always start session with empty history
   selectedVoice = localStorage.getItem('friday_voice') || 'nova';
   document.getElementById('voice-select').value = selectedVoice;
   updateVoiceLabel();
@@ -345,7 +347,10 @@ async function api(path, opts={}){
   opts.headers['x-auth-token'] = authToken;
   opts.headers['Content-Type'] = 'application/json';
   const res = await fetch(path, opts);
-  if(res.status === 401){ sessionStorage.clear(); location.reload(); }
+  if(res.status === 401){
+    console.error('Auth failed for:', path);
+    throw new Error('401 Unauthorized - bad token');
+  }
   return res;
 }
 
@@ -367,17 +372,15 @@ async function saveMemoryItem(key, value){
 
 // ===== HISTORY =====
 async function loadHistory(){
-  try{
-    const res = await api('/api/history');
-    const data = await res.json();
-    history = data.messages || [];
-  }catch(e){ history=[]; }
+  // Keep history in memory only for this session — don't load old history
+  // This prevents stale/mixed up responses from previous sessions
+  history = [];
 }
 
-async function appendHistory(role, content){
-  history.push({role,content});
-  if(history.length>40) history=history.slice(-40);
-  await api('/api/history',{method:'POST',body:JSON.stringify({role,content})});
+function appendHistory(role, content){
+  history.push({role, content});
+  if(history.length > 20) history = history.slice(-20);
+  // Don't save to Supabase — session only
 }
 
 function updateMemBadge(){
@@ -495,6 +498,9 @@ async function askGPT(userInput){
   document.getElementById('ai-status').textContent='Thinking';
   showThinking();
 
+  // Add user message BEFORE sending so GPT has full context
+  appendHistory('user', userInput);
+
   try{
     const res=await api('/api/chat',{
       method:'POST',
@@ -521,19 +527,19 @@ async function askGPT(userInput){
 
     // Check for memory trigger
     checkForMemory(userInput, reply);
-
-    await appendHistory('user', userInput);
-    await appendHistory('assistant', reply);
-
+    appendHistory('assistant', reply);
     speak(reply);
 
   }catch(e){
+    history.pop(); // remove user message if call failed
     document.getElementById('ai-status').textContent='Error';
-    const msg=e.message.includes('quota')||e.message.includes('insufficient')
-      ? "Looks like the API account is out of credits, Mr. Roberts. Top up at platform.openai.com."
-      : "I hit a snag, Boss. Check the connection and try again.";
-    speak(msg);
     log('Error: '+e.message,'sys');
+    const msg=e.message.includes('quota')||e.message.includes('insufficient')
+      ? "Looks like the API account is out of credits, Mr. Roberts."
+      : e.message.includes('401')||e.message.includes('Unauthorized')
+      ? "Auth error, Boss. Try refreshing the page and logging in again."
+      : "I hit a snag, Boss. Error: "+e.message;
+    speak(msg);
   }
 }
 
