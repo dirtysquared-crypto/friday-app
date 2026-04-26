@@ -30,16 +30,19 @@ const APP_PASSWORD = process.env.APP_PASSWORD || 'friday2024';
 
 app.post('/api/login', (req, res) => {
   const { password } = req.body;
-  if (password === APP_PASSWORD) {
-    res.json({ success: true, token: Buffer.from(APP_PASSWORD).toString('base64') });
+  const clean = (password || '').trim();
+  const expected = (APP_PASSWORD || '').trim();
+  console.log('Login attempt. Expected length:', expected.length, 'Got length:', clean.length);
+  if (clean === expected) {
+    res.json({ success: true, token: Buffer.from(expected).toString('base64') });
   } else {
-    res.status(401).json({ success: false, message: 'Access denied.' });
+    res.status(401).json({ success: false, message: 'Access denied, Mr. Roberts.' });
   }
 });
 
 function authMiddleware(req, res, next) {
   const token = req.headers['x-auth-token'];
-  const expected = Buffer.from(APP_PASSWORD).toString('base64');
+  const expected = Buffer.from((APP_PASSWORD || '').trim()).toString('base64');
   if (!token || token !== expected) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
@@ -111,6 +114,25 @@ CAPABILITIES:
 - If you can't find something, be honest — don't make things up
 
 TODAY'S DATE: ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
+
+BIRTHDAY CALCULATIONS (use these exact numbers — do not recalculate):
+${(() => {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const birthdays = [
+    { name: 'Freddy', date: new Date(today.getFullYear(), 0, 5) },
+    { name: 'Shawna', date: new Date(today.getFullYear(), 5, 20) },
+    { name: 'Jillian (Jilly)', date: new Date(today.getFullYear(), 6, 15) },
+    { name: 'Kiley', date: new Date(today.getFullYear(), 8, 6) }
+  ];
+  return birthdays.map(b => {
+    if(b.date < today) b.date.setFullYear(today.getFullYear() + 1);
+    const days = Math.round((b.date - today) / (1000*60*60*24));
+    if(days === 0) return `- ${b.name}: BIRTHDAY IS TODAY`;
+    if(days <= 7) return `- ${b.name}: birthday in ${days} days`;
+    return `- ${b.name}: birthday in ${days} days (no mention needed)`;
+  }).join('\n');
+})()}
 
 ${memory && Object.keys(memory).length > 0 ? `\nPERSISTENT MEMORY:\n${JSON.stringify(memory, null, 2)}` : ''}`;
 
