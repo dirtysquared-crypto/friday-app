@@ -8,7 +8,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 
 const APP_PASSWORD = 'friday123';
-const OPENAI_KEY = (process.env.OPENAI_API_KEY || '').trim();
+const OPENAI_KEY = (process.env.FRIDAY_KEY || '').trim();
 
 console.log('Friday starting...');
 console.log('OpenAI key length:', OPENAI_KEY.length);
@@ -91,7 +91,7 @@ ${memBlock}`;
 
   try {
     const fetch = (await import('node-fetch')).default;
-    const key = (process.env.OPENAI_API_KEY || "").trim().split("\n")[0].split("\r")[0];
+    const key = (process.env.FRIDAY_KEY || "").trim().split("\n")[0].split("\r")[0];
     console.log('Using key length:', key.length, 'prefix:', key.substring(0,10));
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -108,7 +108,7 @@ app.post('/api/tts', auth, async (req, res) => {
   const { text, voice = 'nova', speed = 1.0 } = req.body;
   try {
     const fetch = (await import('node-fetch')).default;
-    const key = (process.env.OPENAI_API_KEY || "").trim().split("\n")[0].split("\r")[0];
+    const key = (process.env.FRIDAY_KEY || "").trim().split("\n")[0].split("\r")[0];
     const response = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
@@ -171,7 +171,7 @@ app.delete('/api/history', auth, async (req, res) => {
 
 // ========== TEST ENDPOINT ==========
 app.get('/api/keytest', (req, res) => {
-  const k = (process.env.OPENAI_API_KEY || '');
+  const k = (process.env.FRIDAY_KEY || '');
   res.json({
     length: k.length,
     prefix: k.substring(0, 15),
