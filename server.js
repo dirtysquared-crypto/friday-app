@@ -8,7 +8,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 
 const APP_PASSWORD = 'friday123';
-const OPENAI_KEY ='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';
+const OPENAI_KEY = (process.env.OPENAI_API_KEY || '').trim();
 
 console.log('Friday starting...');
 console.log('OpenAI key length:', OPENAI_KEY.length);
@@ -54,8 +54,8 @@ function bdayLine(name, month, day) {
 }
 
 app.post('/api/chat', auth, async (req, res) => {
-  const { messages, memory } = req.body;
-  const todayStr = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const { messages, memory, localTime } = req.body;
+  const todayStr = localTime || new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   const memBlock = (memory && Object.keys(memory).length > 0) ? `\nPERSISTENT MEMORY:\n${JSON.stringify(memory,null,2)}` : '';
 
   const SYSTEM = `You are F.R.I.D.A.Y. — Fred Roberts Interactive Data Assistant, Yeah. Personal AI of Freddy Roberts.
@@ -91,7 +91,7 @@ ${memBlock}`;
 
   try {
     const fetch = (await import('node-fetch')).default;
-    const key = (process.env.OPENAI_API_KEY || '').trim();
+    const key = OPENAI_KEY;
     console.log('Using key length:', key.length, 'prefix:', key.substring(0,10));
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
