@@ -26,9 +26,10 @@ try {
 }
 
 // ========== AUTH ==========
-const APP_PASSWORD = process.env.APP_PASSWORD ='friday123';
+const APP_PASSWORD = 'friday123';
 process.env.OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 console.log('OpenAI key length:', (process.env.OPENAI_API_KEY || '').length);
+console.log('Key starts with:', (process.env.OPENAI_API_KEY || '').substring(0, 20));
 
 app.post('/api/login', (req, res) => {
   const { password } = req.body;
