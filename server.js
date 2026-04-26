@@ -91,7 +91,7 @@ ${memBlock}`;
 
   try {
     const fetch = (await import('node-fetch')).default;
-    const key = OPENAI_KEY;
+    const key = (process.env.OPENAI_API_KEY || OPENAI_KEY || '').trim(); console.log('Route key length:', key.length);
     console.log('Using key length:', key.length, 'prefix:', key.substring(0,10));
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -108,7 +108,7 @@ app.post('/api/tts', auth, async (req, res) => {
   const { text, voice = 'nova', speed = 1.0 } = req.body;
   try {
     const fetch = (await import('node-fetch')).default;
-    const key = OPENAI_KEY;
+    const key = (process.env.OPENAI_API_KEY || OPENAI_KEY || '').trim(); console.log('Route key length:', key.length);
     const response = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
