@@ -318,9 +318,9 @@ async function doLogin(){
 
 async function onLoggedIn(){
   await loadMemory();
-  await loadHistory();
-  // Clear any old corrupted history from Supabase
+  // Clear old history from Supabase first, then start fresh
   try{ await api('/api/history',{method:'DELETE'}); }catch(e){}
+  history = []; // always start session with empty history
   selectedVoice = localStorage.getItem('friday_voice') || 'nova';
   document.getElementById('voice-select').value = selectedVoice;
   updateVoiceLabel();
