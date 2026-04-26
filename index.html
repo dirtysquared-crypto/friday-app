@@ -319,6 +319,8 @@ async function doLogin(){
 async function onLoggedIn(){
   await loadMemory();
   await loadHistory();
+  // Clear any old corrupted history from Supabase
+  try{ await api('/api/history',{method:'DELETE'}); }catch(e){}
   selectedVoice = localStorage.getItem('friday_voice') || 'nova';
   document.getElementById('voice-select').value = selectedVoice;
   updateVoiceLabel();
@@ -370,17 +372,15 @@ async function saveMemoryItem(key, value){
 
 // ===== HISTORY =====
 async function loadHistory(){
-  try{
-    const res = await api('/api/history');
-    const data = await res.json();
-    history = data.messages || [];
-  }catch(e){ history=[]; }
+  // Keep history in memory only for this session — don't load old history
+  // This prevents stale/mixed up responses from previous sessions
+  history = [];
 }
 
-async function appendHistory(role, content){
-  history.push({role,content});
-  if(history.length>40) history=history.slice(-40);
-  await api('/api/history',{method:'POST',body:JSON.stringify({role,content})});
+function appendHistory(role, content){
+  history.push({role, content});
+  if(history.length > 20) history = history.slice(-20);
+  // Don't save to Supabase — session only
 }
 
 function updateMemBadge(){
@@ -525,8 +525,8 @@ async function askGPT(userInput){
     // Check for memory trigger
     checkForMemory(userInput, reply);
 
-    await appendHistory('user', userInput);
-    await appendHistory('assistant', reply);
+    appendHistory('user', userInput);
+    appendHistory('assistant', reply);
 
     speak(reply);
 
