@@ -8,7 +8,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 
 const APP_PASSWORD = 'friday123';
-const OPENAI_KEY = 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
+const OPENAI_KEY = (process.env.OPENAI_API_KEY || '').trim();
 
 console.log('Friday starting...');
 console.log('OpenAI key length:', OPENAI_KEY.length);
