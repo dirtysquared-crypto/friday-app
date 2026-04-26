@@ -27,6 +27,8 @@ try {
 
 // ========== AUTH ==========
 const APP_PASSWORD = process.env.APP_PASSWORD ='friday123';
+process.env.OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+console.log('OpenAI key length:', (process.env.OPENAI_API_KEY || '').length);
 
 app.post('/api/login', (req, res) => {
   const { password } = req.body;
