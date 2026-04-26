@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
-const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 
 const app = express();
@@ -11,10 +10,20 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 
 // ========== SUPABASE ==========
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
+let supabase = null;
+try {
+  const { createClient } = require('@supabase/supabase-js');
+  const sUrl = (process.env.SUPABASE_URL || '').trim();
+  const sKey = (process.env.SUPABASE_ANON_KEY || '').trim();
+  if (sUrl && sKey) {
+    supabase = createClient(sUrl, sKey);
+    console.log('Supabase connected.');
+  } else {
+    console.warn('Supabase env vars missing — memory/history disabled.');
+  }
+} catch(e) {
+  console.warn('Supabase init failed:', e.message);
+}
 
 // ========== AUTH ==========
 const APP_PASSWORD = process.env.APP_PASSWORD || 'friday2024';
