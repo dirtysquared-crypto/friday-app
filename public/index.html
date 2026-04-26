@@ -213,7 +213,7 @@ body.tablet .status-dots{width:200px;height:200px}
     <div class="input-row span2">
       <button class="mic-btn" id="wake-btn" onclick="toggleWake()" title="Voice Wake">&#127908;</button>
       <div class="input-panel">
-        <input id="prompt" placeholder="Type a command or question..." onkeydown="if(event.key==='Enter')sendTyped()">
+        <input id="prompt" placeholder="Type a command or question...">
         <button class="send-btn" onclick="sendTyped()">SEND</button>
       </div>
     </div>
@@ -556,16 +556,26 @@ function checkForMemory(input, reply){
 }
 
 // ===== INPUT =====
+let sending = false;
 function sendTyped(){
+  if(sending) return;
   const box=document.getElementById('prompt');
   const text=box.value.trim();
   if(!text) return;
+  sending = true;
+  setTimeout(()=>{ sending=false; }, 1000);
   box.value='';
   log('You: '+text,'user');
   const local=localBrain(text);
   if(local){ speak(local); return; }
   askGPT(text);
 }
+
+// Enter key handler
+document.addEventListener('DOMContentLoaded', ()=>{
+  const box = document.getElementById('prompt');
+  if(box) box.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); sendTyped(); } });
+});
 
 function quickCmd(text){
   log('You: '+text,'user');

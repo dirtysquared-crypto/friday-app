@@ -73,11 +73,13 @@ FAMILY:
 
 TODAY: ${todayStr}
 
-BIRTHDAY STATUS (exact — do not recalculate):
+BIRTHDAY STATUS — CRITICAL: These are pre-calculated exact values. You MUST use these numbers. Do NOT calculate birthdays yourself. Do NOT use any other dates. Trust only what is written here:
 ${bdayLine('Freddy',1,5)}
 ${bdayLine('Shawna',6,20)}
 ${bdayLine('Jillian/Jilly',7,15)}
 ${bdayLine('Kiley',9,6)}
+
+If Freddy asks when a birthday is, use ONLY the dates above: Freddy=Jan 5, Shawna=Jun 20, Jillian=Jul 15, Kiley=Sep 6. Never guess or recalculate.
 
 APPS: Charleroi Leak App: https://fredsleakappv2.tiiny.site | FRP site: https://fieldrecordspro.com | Others not linked yet
 To open: announce it, then OPEN_APP::url on its own line
