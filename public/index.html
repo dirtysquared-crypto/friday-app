@@ -57,22 +57,52 @@ body.tablet .core{height:220px}
 body.tablet .r1{width:200px;height:200px}
 body.tablet .r2{width:145px;height:145px}
 body.tablet .r3{width:100px;height:100px}
-@keyframes spin{to{transform:rotate(360deg)}}
-.reactor{width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,rgba(0,245,255,0.25),rgba(0,20,40,0.9));border:1.5px solid rgba(200,255,255,0.7);box-shadow:0 0 60px var(--cyan),0 0 120px rgba(0,245,255,0.3),inset 0 0 30px rgba(0,245,255,0.2);animation:pulse 2.5s ease-in-out infinite;cursor:pointer;transition:box-shadow 0.3s}
-.reactor.active{animation:pulseActive 0.8s ease-in-out infinite;box-shadow:0 0 100px var(--cyan),0 0 200px rgba(0,245,255,0.6),inset 0 0 50px rgba(0,245,255,0.4)}
-@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
-@keyframes pulseActive{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
-.status-dots{position:absolute;width:240px;height:240px;border-radius:50%}
-body.tablet .status-dots{width:200px;height:200px}
-.sdot{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:dotPulse 2s ease-in-out infinite}
-.sdot:nth-child(1){top:0;left:50%;transform:translateX(-50%);animation-delay:0s}
-.sdot:nth-child(2){top:50%;right:0;transform:translateY(-50%);animation-delay:0.5s}
-.sdot:nth-child(3){bottom:0;left:50%;transform:translateX(-50%);animation-delay:1s}
-.sdot:nth-child(4){top:50%;left:0;transform:translateY(-50%);animation-delay:1.5s}
-@keyframes dotPulse{0%,100%{opacity:1}50%{opacity:0.2}}
-.center{position:absolute;text-align:center;pointer-events:none}
-.center-mode{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:0.3em;color:rgba(0,245,255,0.7);text-transform:uppercase}
-.center-clock{font-family:'Orbitron',monospace;font-size:24px;font-weight:700;color:white;text-shadow:0 0 15px var(--cyan);margin-top:4px;line-height:1}
+/* MCU FRIDAY REACTOR */
+.core{height:280px;position:relative;display:flex;align-items:center;justify-content:center;margin:6px 0}
+body.tablet .core{height:240px}
+
+.friday-reactor{position:relative;width:260px;height:260px;cursor:pointer}
+body.tablet .friday-reactor{width:220px;height:220px}
+
+.friday-reactor svg{position:absolute;top:0;left:0;width:100%;height:100%}
+
+/* Outer ring slow spin */
+.ring-outer{animation:spinCW 25s linear infinite;transform-origin:center}
+/* Segment ring counter spin */
+.ring-segs{animation:spinCCW 18s linear infinite;transform-origin:center}
+/* Inner gauge ring */
+.ring-gauge{animation:spinCW 12s linear infinite;transform-origin:center}
+/* Tick ring */
+.ring-ticks{animation:spinCCW 40s linear infinite;transform-origin:center}
+
+@keyframes spinCW{to{transform:rotate(360deg)}}
+@keyframes spinCCW{to{transform:rotate(-360deg)}}
+
+/* Center reactor core */
+.reactor-core{
+  position:absolute;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:88px;height:88px;
+  border-radius:50%;
+  background:radial-gradient(circle at 40% 35%, rgba(0,245,255,0.35), rgba(0,20,40,0.95));
+  border:1.5px solid rgba(0,245,255,0.8);
+  box-shadow:0 0 40px var(--cyan),0 0 80px rgba(0,245,255,0.3),inset 0 0 30px rgba(0,245,255,0.15);
+  animation:corePulse 2.5s ease-in-out infinite;
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;
+}
+body.tablet .reactor-core{width:74px;height:74px}
+.reactor-core.active{
+  box-shadow:0 0 80px var(--cyan),0 0 160px rgba(0,245,255,0.5),inset 0 0 50px rgba(0,245,255,0.3);
+  animation:coreActive 0.6s ease-in-out infinite;
+}
+@keyframes corePulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.05)}}
+@keyframes coreActive{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.1)}}
+
+.core-mode{font-family:'Orbitron',monospace;font-size:8px;letter-spacing:0.25em;color:rgba(0,245,255,0.75);text-transform:uppercase;text-align:center;line-height:1.2}
+.core-clock{font-family:'Orbitron',monospace;font-size:20px;font-weight:700;color:white;text-shadow:0 0 12px var(--cyan);text-align:center;line-height:1;margin-top:3px}
+body.tablet .core-clock{font-size:17px}
 
 /* PANELS */
 .response-panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin:6px 0;box-shadow:var(--glow);min-height:70px;display:flex;align-items:center}
@@ -192,17 +222,125 @@ body.tablet .status-dots{width:200px;height:200px}
     </div>
 
     <div class="core span2">
-      <div class="ring r1"></div>
-      <div class="ring r2"></div>
-      <div class="ring r3"></div>
-      <div class="status-dots">
-        <div class="sdot"></div><div class="sdot"></div>
-        <div class="sdot"></div><div class="sdot"></div>
-      </div>
-      <div class="reactor" id="reactor" onclick="toggleWake()"></div>
-      <div class="center">
-        <div class="center-mode" id="mode-text">Standby</div>
-        <div class="center-clock" id="clock">--:--</div>
+      <div class="friday-reactor" onclick="toggleWake()">
+
+        <!-- SVG Ring System -->
+        <svg viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+              <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <filter id="glowStrong">
+              <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+              <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+
+          <!-- OUTER DECORATIVE RING -->
+          <g class="ring-outer" style="transform-origin:130px 130px">
+            <circle cx="130" cy="130" r="124" fill="none" stroke="rgba(0,245,255,0.15)" stroke-width="1"/>
+            <!-- Outer tick marks -->
+            <g filter="url(#glow)">
+              <!-- 72 tick marks around outer ring -->
+              <circle cx="130" cy="7" r="2" fill="rgba(0,245,255,0.6)"/>
+              <circle cx="130" cy="253" r="2" fill="rgba(0,245,255,0.6)"/>
+              <circle cx="7" cy="130" r="2" fill="rgba(0,245,255,0.6)"/>
+              <circle cx="253" cy="130" r="2" fill="rgba(0,245,255,0.6)"/>
+              <!-- Small ticks -->
+              <line x1="130" y1="8" x2="130" y2="18" stroke="rgba(0,245,255,0.4)" stroke-width="1"/>
+              <line x1="130" y1="242" x2="130" y2="252" stroke="rgba(0,245,255,0.4)" stroke-width="1"/>
+              <line x1="8" y1="130" x2="18" y2="130" stroke="rgba(0,245,255,0.4)" stroke-width="1"/>
+              <line x1="242" y1="130" x2="252" y2="130" stroke="rgba(0,245,255,0.4)" stroke-width="1"/>
+              <!-- Diagonal ticks -->
+              <line x1="218" y1="42" x2="212" y2="52" stroke="rgba(0,245,255,0.3)" stroke-width="1"/>
+              <line x1="42" y1="218" x2="52" y2="212" stroke="rgba(0,245,255,0.3)" stroke-width="1"/>
+              <line x1="42" y1="42" x2="52" y2="52" stroke="rgba(0,245,255,0.3)" stroke-width="1"/>
+              <line x1="218" y1="218" x2="212" y2="208" stroke="rgba(0,245,255,0.3)" stroke-width="1"/>
+            </g>
+          </g>
+
+          <!-- SEGMENT RING - the iconic MCU arc segments -->
+          <g class="ring-segs" style="transform-origin:130px 130px" filter="url(#glow)">
+            <!-- Outer arc segments - thick filled ones -->
+            <path d="M130,20 A110,110 0 0,1 228,75" fill="none" stroke="rgba(0,245,255,0.7)" stroke-width="8" stroke-linecap="round"/>
+            <path d="M228,185 A110,110 0 0,1 130,240" fill="none" stroke="rgba(0,245,255,0.7)" stroke-width="8" stroke-linecap="round"/>
+            <path d="M32,75 A110,110 0 0,1 130,20" fill="none" stroke="rgba(0,245,255,0.5)" stroke-width="8" stroke-linecap="round"/>
+            <path d="M130,240 A110,110 0 0,1 32,185" fill="none" stroke="rgba(0,245,255,0.5)" stroke-width="8" stroke-linecap="round"/>
+            <!-- Gap arcs - thin -->
+            <path d="M228,75 A110,110 0 0,1 228,185" fill="none" stroke="rgba(0,245,255,0.2)" stroke-width="2"/>
+            <path d="M32,185 A110,110 0 0,1 32,75" fill="none" stroke="rgba(0,245,255,0.2)" stroke-width="2"/>
+            <!-- Segment end dots -->
+            <circle cx="228" cy="75" r="4" fill="var(--cyan)" opacity="0.9"/>
+            <circle cx="228" cy="185" r="4" fill="var(--cyan)" opacity="0.9"/>
+            <circle cx="32" cy="75" r="4" fill="var(--cyan)" opacity="0.7"/>
+            <circle cx="32" cy="185" r="4" fill="var(--cyan)" opacity="0.7"/>
+            <circle cx="130" cy="20" r="4" fill="var(--cyan)" opacity="0.9"/>
+            <circle cx="130" cy="240" r="4" fill="var(--cyan)" opacity="0.9"/>
+          </g>
+
+          <!-- GAUGE RING - inner technical ring with markers -->
+          <g class="ring-gauge" style="transform-origin:130px 130px" filter="url(#glow)">
+            <circle cx="130" cy="130" r="88" fill="none" stroke="rgba(0,245,255,0.12)" stroke-width="1"/>
+            <!-- Gauge arc - top -->
+            <path d="M58,72 A88,88 0 0,1 202,72" fill="none" stroke="rgba(0,245,255,0.5)" stroke-width="3" stroke-linecap="round"/>
+            <!-- Gauge arc - bottom -->
+            <path d="M202,188 A88,88 0 0,1 58,188" fill="none" stroke="rgba(0,245,255,0.35)" stroke-width="3" stroke-linecap="round"/>
+            <!-- Gauge markers -->
+            <line x1="130" y1="42" x2="130" y2="52" stroke="rgba(0,245,255,0.6)" stroke-width="2"/>
+            <line x1="130" y1="208" x2="130" y2="218" stroke="rgba(0,245,255,0.6)" stroke-width="2"/>
+            <line x1="42" y1="130" x2="52" y2="130" stroke="rgba(0,245,255,0.4)" stroke-width="1.5"/>
+            <line x1="208" y1="130" x2="218" y2="130" stroke="rgba(0,245,255,0.4)" stroke-width="1.5"/>
+            <!-- Small gauge ticks -->
+            <line x1="193" y1="57" x2="188" y2="65" stroke="rgba(0,245,255,0.4)" stroke-width="1.5"/>
+            <line x1="67" y1="57" x2="72" y2="65" stroke="rgba(0,245,255,0.4)" stroke-width="1.5"/>
+            <line x1="193" y1="203" x2="188" y2="195" stroke="rgba(0,245,255,0.3)" stroke-width="1.5"/>
+            <line x1="67" y1="203" x2="72" y2="195" stroke="rgba(0,245,255,0.3)" stroke-width="1.5"/>
+          </g>
+
+          <!-- TICK RING - fine detail ring -->
+          <g class="ring-ticks" style="transform-origin:130px 130px">
+            <circle cx="130" cy="130" r="104" fill="none" stroke="rgba(0,245,255,0.08)" stroke-width="1"/>
+            <!-- Many small ticks -->
+            <g stroke="rgba(0,245,255,0.3)" stroke-width="1">
+              <line x1="130" y1="26" x2="130" y2="34"/>
+              <line x1="174" y1="30" x2="172" y2="38"/>
+              <line x1="208" y1="52" x2="204" y2="59"/>
+              <line x1="230" y1="86" x2="223" y2="89"/>
+              <line x1="234" y1="130" x2="226" y2="130"/>
+              <line x1="230" y1="174" x2="223" y2="171"/>
+              <line x1="208" y1="208" x2="204" y2="201"/>
+              <line x1="174" y1="230" x2="172" y2="222"/>
+              <line x1="130" y1="234" x2="130" y2="226"/>
+              <line x1="86" y1="230" x2="88" y2="222"/>
+              <line x1="52" y1="208" x2="56" y2="201"/>
+              <line x1="30" y1="174" x2="37" y2="171"/>
+              <line x1="26" y1="130" x2="34" y2="130"/>
+              <line x1="30" y1="86" x2="37" y2="89"/>
+              <line x1="52" y1="52" x2="56" y2="59"/>
+              <line x1="86" y1="30" x2="88" y2="38"/>
+            </g>
+          </g>
+
+          <!-- INNER RING -->
+          <circle cx="130" cy="130" r="72" fill="none" stroke="rgba(0,245,255,0.2)" stroke-width="1" filter="url(#glow)"/>
+          <circle cx="130" cy="130" r="66" fill="none" stroke="rgba(0,245,255,0.08)" stroke-width="1"/>
+
+          <!-- CARDINAL CONNECTOR LINES -->
+          <g filter="url(#glow)" opacity="0.5">
+            <line x1="130" y1="58" x2="130" y2="72" stroke="rgba(0,245,255,0.6)" stroke-width="1"/>
+            <line x1="130" y1="188" x2="130" y2="202" stroke="rgba(0,245,255,0.6)" stroke-width="1"/>
+            <line x1="58" y1="130" x2="72" y2="130" stroke="rgba(0,245,255,0.4)" stroke-width="1"/>
+            <line x1="188" y1="130" x2="202" y2="130" stroke="rgba(0,245,255,0.4)" stroke-width="1"/>
+          </g>
+        </svg>
+
+        <!-- Center Core -->
+        <div class="reactor-core" id="reactor">
+          <div class="core-mode" id="mode-text">Standby</div>
+          <div class="core-clock" id="clock">--:--</div>
+        </div>
+
       </div>
     </div>
 
