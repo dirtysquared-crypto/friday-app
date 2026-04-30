@@ -717,19 +717,35 @@ async function askGPT(userInput){
       setTimeout(()=>openDirections(dest),1500);
     }
 
-    // Extract and display clickable links
-    const linkMatches = [...reply.matchAll(/LINK::([^:]+)::([^\n]+)/g)];
+    // Extract and display clickable links from markdown URLs
+    const linkMatches = [...reply.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g)];
+    const seenUrls = new Set();
     if(linkMatches.length > 0){
+      const el = document.getElementById('log');
       linkMatches.forEach(m => {
+        const label = m[1].replace(/\[.*?\]\(.*?\)/g,'').trim() || 'Open link';
+        const url = m[2].trim();
+        if(!seenUrls.has(url) && url.startsWith('http')){
+          seenUrls.add(url);
+          el.innerHTML = `<div class="msg"><span class="tag">🔗</span><a href="${url}" target="_blank" style="color:var(--cyan);text-decoration:underline;word-break:break-all">${label}</a></div>` + el.innerHTML;
+        }
+      });
+    }
+    // Also handle LINK:: format as fallback
+    const linkMatches2 = [...reply.matchAll(/LINK::([^:]+)::([^\n]+)/g)];
+    if(linkMatches2.length > 0){
+      const el = document.getElementById('log');
+      linkMatches2.forEach(m => {
         const url = m[1].trim();
         const label = m[2].trim();
         reply = reply.replace(m[0], '');
-        // Add clickable link to feed
-        const el = document.getElementById('log');
         el.innerHTML = `<div class="msg"><span class="tag">🔗</span><a href="${url}" target="_blank" style="color:var(--cyan);text-decoration:underline">${label}</a></div>` + el.innerHTML;
       });
       reply = reply.trim();
     }
+    // Clean up markdown links from spoken reply — leave just the text
+    reply = reply.replace(/\[\[([^\]]+)\]\([^)]+\)\]\([^)]+\)/g, '$1');
+    reply = reply.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
 
     // Check for memory trigger
     checkForMemory(userInput, reply);
