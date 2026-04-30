@@ -116,30 +116,32 @@ ${memBlock}`;
     const fetch = (await import('node-fetch')).default;
     const key = (process.env.FRIDAY_KEY || "").trim().split("\n")[0].split("\r")[0];
     console.log('Using key length:', key.length, 'prefix:', key.substring(0,10));
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'gpt-4o',
-        messages: [{ role:'system', content: SYSTEM }, ...(messages||[])],
-        max_tokens: 800,
-        temperature: 0.85,
         tools: [{ type: 'web_search_preview' }],
-        tool_choice: 'auto'
+        input: [
+          { role: 'system', content: SYSTEM },
+          ...(messages||[]).map(m => ({ role: m.role, content: m.content }))
+        ]
       })
     });
     if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'OpenAI error'); }
     const data = await response.json();
-    // Handle both regular text and tool use responses
+    // Responses API returns output array
     let reply = '';
-    if (data.choices[0].message.content) {
-      reply = data.choices[0].message.content.trim();
-    } else if (data.choices[0].message.tool_calls) {
-      // Tool was called — get the final assistant message
-      reply = data.output_text || data.choices[0].finish_reason || 'Search complete.';
+    if (data.output_text) {
+      reply = data.output_text.trim();
+    } else if (data.output) {
+      const textItem = data.output.find(o => o.type === 'message');
+      if (textItem && textItem.content) {
+        const textContent = textItem.content.find(c => c.type === 'output_text' || c.type === 'text');
+        reply = textContent ? textContent.text.trim() : '';
+      }
     }
-    // Fallback
-    if (!reply) reply = "I ran a search but couldn't find a clear answer on that one, Fred.";
+    if (!reply) reply = "I ran a search but couldn't pull a clear answer on that one, Fred.";
     res.json({ reply });
   } catch(e) { console.error('Chat error:', e.message); res.status(500).json({ error: e.message }); }
 });
