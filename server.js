@@ -142,6 +142,7 @@ ${memBlock}`;
       }
     }
     if (!reply) reply = "I ran a search but couldn't pull a clear answer on that one, Fred.";
+    console.log('Reply preview:', reply.substring(0, 200));
     res.json({ reply });
   } catch(e) { console.error('Chat error:', e.message); res.status(500).json({ error: e.message }); }
 });
