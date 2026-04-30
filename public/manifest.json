@@ -1,0 +1,21 @@
+{
+  "name": "F.R.I.D.A.Y.",
+  "short_name": "FRIDAY",
+  "description": "Fred Roberts Interactive Data Assistant, Yeah",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020a12",
+  "theme_color": "#00f5ff",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
