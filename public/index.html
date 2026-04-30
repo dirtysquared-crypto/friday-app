@@ -830,6 +830,9 @@ function activateBasement(){
   document.body.classList.add('basement');
   updateSVGColors('#ff6a00','rgba(255,106,0,0.9)','rgba(255,80,0,0.6)');
   setThreat('secure');
+  // Stop any current speech before announcing mode change
+  speechSynthesis.cancel();
+  if(window._currentAudio){ window._currentAudio.pause(); window._currentAudio = null; }
   const lines = [
     "Basement Protocol active. Switching to secure mode.",
     "Secure channel established. All systems locked down.",
@@ -845,6 +848,9 @@ function deactivateBasement(){
   document.body.classList.remove('basement');
   updateSVGColors('#00f5ff','rgba(0,245,255,0.85)','rgba(0,245,255,0.55)');
   setThreat('nominal');
+  // Stop any current speech before announcing mode change
+  speechSynthesis.cancel();
+  if(window._currentAudio){ window._currentAudio.pause(); window._currentAudio = null; }
   const lines = [
     "Back to work mode. All systems nominal.",
     "Switching back to standard mode, Mr. Roberts.",
@@ -901,6 +907,7 @@ async function speak(text){
     const blob=await res.blob(); dataBytes+=blob.size;
     const url=URL.createObjectURL(blob);
     const audio=new Audio(url);
+    window._currentAudio = audio;
     audio.onended=()=>{
       setModeText(listening?'Listening':'Standby'); setThreat('nominal');
       document.getElementById('reactor').classList.remove('active');
