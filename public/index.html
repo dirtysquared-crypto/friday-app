@@ -386,7 +386,7 @@ body.basement .ctrl-btn:hover{background:rgba(255,106,0,0.15);color:#ff8844}
 
     <!-- REACTOR -->
     <div class="core span2">
-      <div class="friday-reactor">
+      <div class="friday-reactor" onclick="toggleWake()" style="cursor:pointer">
         <svg viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <filter id="glow"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
@@ -847,9 +847,11 @@ function activateBasement(){
 function deactivateBasement(){
   basementMode = false;
   document.body.classList.remove('basement');
-  updateSVGColors('#00f5ff','rgba(0,245,255,0.85)','rgba(0,245,255,0.55)');
+  // Force SVG reset after CSS transition starts
+  setTimeout(()=>{
+    updateSVGColors('#00f5ff','rgba(0,245,255,0.85)','rgba(0,245,255,0.55)');
+  }, 50);
   setThreat('nominal');
-  // Stop any current speech before announcing mode change
   speechSynthesis.cancel();
   if(window._currentAudio){ window._currentAudio.pause(); window._currentAudio = null; }
   const lines = [
