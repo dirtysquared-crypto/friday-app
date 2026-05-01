@@ -1003,16 +1003,15 @@ function localBrain(input){
     setTimeout(()=>openSpotify(cleanQuery), 1200);
     return null;
   }
-  if(q.includes('basement protocol')||q.includes('activate basement')){ activateBasement(); return null; }
-  if(q.includes('back to work')||q.includes('work mode')||q.includes('normal mode')||q.includes('return to normal')||q.includes('deactivate basement')||q.includes('exit basement')||q.includes('standard mode')||q.includes('cancel basement')){ deactivateBasement(); return null; }
-  const apps=[
+  if(q.includes('basement protocol')||q.includes('activate basement')){ activateBasement(); return ''; }
+  if(q.includes('back to work')||q.includes('work mode')||q.includes('normal mode')||q.includes('return to normal')||q.includes('deactivate basement')||q.includes('exit basement')||q.includes('standard mode')||q.includes('cancel basement')){ deactivateBasement(); return ''; }  const apps=[
     {keys:['charleroi leak',"fred\'s leak",'freds leak'],url:'https://fredsleakappv2.tiiny.site',name:'Charleroi Leak App'},
     {keys:['field records pro','fieldrecordspro'],url:'https://fieldrecordspro.com',name:'Field Records Pro website'},
   ];
   for(const app of apps){
-    if(app.keys.some(k=>q.includes(k))){ speak(`Opening the ${app.name} now.`); setTimeout(()=>window.open(app.url,'_blank'),1600); return null; }
+    if(app.keys.some(k=>q.includes(k))){ speak(`Opening the ${app.name} now.`); setTimeout(()=>window.open(app.url,'_blank'),1600); return ''; }
   }
-  if((q.includes('open')||q.includes('pull up')||q.includes('launch'))&&q.includes('leak')){ speak("Opening the Charleroi Leak App."); setTimeout(()=>window.open('https://fredsleakappv2.tiiny.site','_blank'),1600); return null; }
+  if((q.includes('open')||q.includes('pull up')||q.includes('launch'))&&q.includes('leak')){ speak("Opening the Charleroi Leak App."); setTimeout(()=>window.open('https://fredsleakappv2.tiiny.site','_blank'),1600); return ''; }
   return null;
 }
 
