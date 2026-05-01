@@ -1002,7 +1002,7 @@ function localBrain(input){
     return null;
   }
   if(q.includes('basement protocol')||q.includes('activate basement')){ activateBasement(); return null; }
-  if(q.includes('back to work')||q.includes('work mode')){ deactivateBasement(); return null; }
+  if(q.includes('back to work')||q.includes('work mode')||q.includes('normal mode')||q.includes('return to normal')||q.includes('deactivate basement')||q.includes('exit basement')||q.includes('standard mode')||q.includes('cancel basement')){ deactivateBasement(); return null; }
   const apps=[
     {keys:['charleroi leak',"fred\'s leak",'freds leak'],url:'https://fredsleakappv2.tiiny.site',name:'Charleroi Leak App'},
     {keys:['field records pro','fieldrecordspro'],url:'https://fieldrecordspro.com',name:'Field Records Pro website'},
