@@ -386,7 +386,7 @@ body.basement .ctrl-btn:hover{background:rgba(255,106,0,0.15);color:#ff8844}
 
     <!-- REACTOR -->
     <div class="core span2">
-      <div class="friday-reactor" onclick="toggleWake()">
+      <div class="friday-reactor">
         <svg viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <filter id="glow"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
@@ -473,6 +473,7 @@ body.basement .ctrl-btn:hover{background:rgba(255,106,0,0.15);color:#ff8844}
       <button class="quick-chip" onclick="getStock()">&#128200; WSTAX</button>
       <button class="quick-chip" onclick="quickCmd('System status')">&#9881; Status</button>
       <button class="quick-chip" onclick="startFriday()">&#128075; Greet</button>
+      <button class="quick-chip" onclick="openSpotify('top hits');speak('Opening Spotify.')">&#127925; Music</button>
     </div>
 
     <!-- FILE INPUT -->
@@ -867,6 +868,9 @@ function updateSVGColors(dotColor, seg1, seg2){
   if(paths[1]) paths[1].setAttribute('stroke', seg1);
   if(paths[2]) paths[2].setAttribute('stroke', seg2);
   if(paths[3]) paths[3].setAttribute('stroke', seg2);
+  // Reset gap arcs too
+  if(paths[4]) paths[4].setAttribute('stroke', dotColor.replace(')', ',0.18)').replace('rgb','rgba'));
+  if(paths[5]) paths[5].setAttribute('stroke', dotColor.replace(')', ',0.18)').replace('rgb','rgba'));
 }
 
 // ===== MODE TOGGLE =====
@@ -960,10 +964,6 @@ async function askGPT(userInput){
       });
     }
     reply=reply.replace(/\[\[([^\]]+)\]\([^)]+\)\]\([^)]+\)/g,'$1').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1');
-    // Basement / work mode commands
-    const q=userInput.toLowerCase();
-    if(q.includes('basement protocol')||q.includes('activate basement')){ setTimeout(activateBasement,500); }
-    if(q.includes('back to work')||q.includes('work mode')||q.includes('deactivate basement')){ setTimeout(deactivateBasement,500); }
     checkForMemory(userInput,reply);
     appendHistory('assistant',reply);
     // Auto extract memorable facts in background — don't await, non-blocking
@@ -991,6 +991,16 @@ function localBrain(input){
   const navMatch=q.match(/(?:navigate|take me) to (.+)/);
   if(navMatch){ openDirections(navMatch[1].trim()); return `Navigating to ${navMatch[1].trim()}.`; }
   if(q.includes('upload a file')||q.includes('show you something')||q.includes('send you a file')){ openFilePicker(); return "File picker is open. Grab what you need."; }
+  // Spotify music
+  const musicMatch = q.match(/(?:play|put on|start|queue)\s+(.+)/);
+  if(musicMatch){
+    const query = musicMatch[1].trim();
+    const skip = ['the','some','me','us','a','an'];
+    const cleanQuery = query.split(' ').filter(w=>!skip.includes(w)||query.split(' ').length>1).join(' ');
+    speak(`Opening Spotify for ${cleanQuery}.`);
+    setTimeout(()=>openSpotify(cleanQuery), 1200);
+    return null;
+  }
   if(q.includes('basement protocol')||q.includes('activate basement')){ activateBasement(); return null; }
   if(q.includes('back to work')||q.includes('work mode')){ deactivateBasement(); return null; }
   const apps=[
@@ -1040,16 +1050,54 @@ document.addEventListener('DOMContentLoaded',()=>{ const box=document.getElement
 function quickCmd(text){ log('You: '+text,'user'); const local=localBrain(text); if(local){ speak(local); return; } askGPT(text); }
 
 // ===== VOICE =====
+function resetMic(){
+  listening = false;
+  if(recognition){ try{ recognition.abort(); }catch(e){} recognition = null; }
+  document.getElementById('wake-btn').classList.remove('mic-active');
+  document.getElementById('wake-indicator').classList.remove('show');
+  setModeText('Standby');
+}
+
+let micTimeout = null;
+
 function toggleWake(){
-  if(listening){ recognition&&recognition.stop(); listening=false; setModeText('Standby'); document.getElementById('wake-btn').classList.remove('mic-active'); document.getElementById('wake-indicator').classList.remove('show'); return; }
+  if(listening){ resetMic(); return; }
+
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){ speak("Voice recognition not supported here. Try Chrome."); return; }
-  recognition=new SR(); recognition.continuous=false; recognition.interimResults=false; recognition.lang='en-US';
-  recognition.onstart=()=>{ listening=true; setModeText('Listening'); document.getElementById('wake-btn').classList.add('mic-active'); document.getElementById('wake-indicator').classList.add('show'); };
-  recognition.onresult=e=>{ const t=e.results[0][0].transcript.trim(); log('Heard: '+t,'user'); listening=false; document.getElementById('wake-btn').classList.remove('mic-active'); document.getElementById('wake-indicator').classList.remove('show'); setModeText('Thinking'); const local=localBrain(t); if(local){ speak(local); return; } askGPT(t); };
-  recognition.onerror=()=>{ listening=false; setModeText('Standby'); document.getElementById('wake-btn').classList.remove('mic-active'); document.getElementById('wake-indicator').classList.remove('show'); };
-  recognition.onend=()=>{ listening=false; setModeText('Standby'); document.getElementById('wake-btn').classList.remove('mic-active'); document.getElementById('wake-indicator').classList.remove('show'); };
-  recognition.start();
+
+  recognition=new SR();
+  recognition.continuous=false;
+  recognition.interimResults=false;
+  recognition.lang='en-US';
+
+  recognition.onstart=()=>{
+    listening=true;
+    setModeText('Listening');
+    document.getElementById('wake-btn').classList.add('mic-active');
+    document.getElementById('wake-indicator').classList.add('show');
+    // Auto-stop after 8 seconds if nothing heard
+    micTimeout = setTimeout(()=>{
+      if(listening){ resetMic(); log('Mic timed out.','sys'); }
+    }, 8000);
+  };
+
+  recognition.onresult=e=>{
+    clearTimeout(micTimeout);
+    const t=e.results[0][0].transcript.trim();
+    log('Heard: '+t,'user');
+    resetMic();
+    setModeText('Thinking');
+    const local=localBrain(t);
+    if(local){ speak(local); return; }
+    askGPT(t);
+  };
+
+  recognition.onerror=()=>{ clearTimeout(micTimeout); resetMic(); log('Mic error — tap mic to try again.','sys'); };
+  recognition.onend=()=>{ clearTimeout(micTimeout); resetMic(); };
+
+  try{ recognition.start(); }
+  catch(e){ resetMic(); log('Could not start mic: '+e.message,'sys'); }
 }
 
 // ===== VOICE SELECTOR =====
@@ -1087,6 +1135,18 @@ async function getStock(){
 
 // ===== DIRECTIONS =====
 function openDirections(dest){ window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`,'_blank'); }
+
+// ===== SPOTIFY =====
+function openSpotify(query){
+  const encoded = encodeURIComponent(query);
+  // Try Spotify app deep link first (Android), fall back to web player
+  const appLink = `spotify:search:${encoded}`;
+  const webLink = `https://open.spotify.com/search/${encoded}`;
+  // Open app link — if Spotify is installed it opens the app, otherwise falls back
+  window.location.href = appLink;
+  // After short delay open web player as fallback for desktop
+  setTimeout(()=>{ window.open(webLink,'_blank'); }, 1000);
+}
 
 // ===== CALENDAR =====
 function addToCalendar(event){
