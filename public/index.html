@@ -558,7 +558,7 @@ body.basement .ctrl-btn:hover{background:rgba(255,106,0,0.15);color:#ff8844}
     <div class="controls">
       <button class="ctrl-btn" onclick="startFriday()">START</button>
       <button class="ctrl-btn" onclick="getWeather()">WEATHER</button>
-      <button class="ctrl-btn" onclick="clearAll()">RESET MEM</button>
+      <button class="ctrl-btn" onclick="clearAll()">RESET SESSION</button>
     </div>
 
     <div class="feed-panel">
@@ -728,10 +728,10 @@ async function loadMemory(){
 async function saveMemoryItem(key,value){ memory[key]=value; updateMemBadge(); await api('/api/memory',{method:'POST',body:JSON.stringify({key,value})}); }
 function updateMemBadge(){ document.getElementById('mem-badge').textContent=`MEM: ${Object.keys(memory).length}`; }
 async function clearAll(){
-  if(!confirm('Clear all Friday memory and conversation history?')) return;
-  memory={};history=[];updateMemBadge();
-  await api('/api/memory',{method:'DELETE'}); await api('/api/history',{method:'DELETE'});
-  speak("Memory wiped clean. Fresh start.");
+  history = [];
+  await api('/api/history',{method:'DELETE'});
+  speak("Session cleared. Memory is intact.");
+  log('Session reset.','sys');
 }
 function appendHistory(role,content){ history.push({role,content}); if(history.length>20) history=history.slice(-20); }
 
@@ -966,6 +966,8 @@ async function askGPT(userInput){
     if(q.includes('back to work')||q.includes('work mode')||q.includes('deactivate basement')){ setTimeout(deactivateBasement,500); }
     checkForMemory(userInput,reply);
     appendHistory('assistant',reply);
+    // Auto extract memorable facts in background — don't await, non-blocking
+    extractAndSaveMemory(userInput, reply);
     speak(reply);
   }catch(e){
     history.pop(); document.getElementById('ai-status').textContent='Error'; setThreat('nominal');
@@ -1007,6 +1009,23 @@ function checkForMemory(input,reply){
   const triggers=["remember that","don\'t forget",'note that','save that','keep in mind'];
   const q=input.toLowerCase();
   if(triggers.some(t=>q.includes(t))){ const key='note_'+Date.now(); const val=input.replace(/remember that|don\'t forget|note that|save that|keep in mind/gi,'').trim(); saveMemoryItem(key,val); }
+}
+
+// ===== AUTO MEMORY EXTRACTION =====
+async function extractAndSaveMemory(userInput, reply){
+  try{
+    const res = await api('/api/extract-memory',{
+      method:'POST',
+      body:JSON.stringify({userMessage: userInput, fridayReply: reply})
+    });
+    const data = await res.json();
+    if(data.facts && data.facts.length > 0){
+      for(const fact of data.facts){
+        const key = 'auto_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+        await saveMemoryItem(key, fact);
+      }
+    }
+  }catch(e){ /* silent — memory extraction is background */ }
 }
 
 // ===== SEND =====

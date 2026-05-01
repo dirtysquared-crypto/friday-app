@@ -56,7 +56,10 @@ function bdayLine(name, month, day) {
 app.post('/api/chat', auth, async (req, res) => {
   const { messages, memory, localTime } = req.body;
   const todayStr = localTime || new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  const memBlock = (memory && Object.keys(memory).length > 0) ? `\nPERSISTENT MEMORY:\n${JSON.stringify(memory,null,2)}` : '';
+  const memEntries = memory && Object.keys(memory).length > 0
+    ? Object.values(memory).filter(v => v && typeof v === 'string').join('\n- ')
+    : null;
+  const memBlock = memEntries ? `\n\nTHINGS FRIDAY HAS LEARNED ABOUT FRED (use naturally in conversation, don't recite them all at once):\n- ${memEntries}` : '';
 
   const SYSTEM = `You are F.R.I.D.A.Y. — Fred Roberts Interactive Data Assistant, Yeah. Personal AI of Freddy Roberts.
 
@@ -163,6 +166,62 @@ ${memBlock}`;
     console.log('Reply preview:', reply.substring(0, 200));
     res.json({ reply });
   } catch(e) { console.error('Chat error:', e.message); res.status(500).json({ error: e.message }); }
+});
+
+// ========== AUTO MEMORY EXTRACTION ==========
+app.post('/api/extract-memory', auth, async (req, res) => {
+  const { userMessage, fridayReply } = req.body;
+  if (!userMessage || !fridayReply) return res.json({ facts: [] });
+
+  try {
+    const fetch = (await import('node-fetch')).default;
+    const key = (process.env.FRIDAY_KEY || '').trim().split('\n')[0].split('\r')[0];
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        max_tokens: 300,
+        temperature: 0,
+        messages: [{
+          role: 'system',
+          content: `You extract memorable facts from conversations to help an AI assistant remember things long term.
+
+Extract ONLY facts that are genuinely worth remembering across future sessions. Be very selective.
+
+Worth remembering:
+- Personal preferences Fred expresses ("I prefer X", "I like Y", "I hate Z")
+- Plans or intentions ("I'm going to buy a tablet", "thinking about X")
+- Important dates or events mentioned
+- Work related info not already known
+- Family updates or news
+- Things Fred explicitly asks to be remembered
+
+NOT worth remembering:
+- Questions or requests (what time is it, check weather)
+- Greetings or chitchat
+- Things already known in the base profile (his job, family names, etc)
+- Friday's responses
+
+Return ONLY a JSON array of short fact strings, max 3 facts, or empty array [] if nothing worth saving.
+Example: ["Fred is planning to buy an Onn tablet this week", "Fred prefers Onyx voice for basement mode"]
+Return ONLY the JSON array, nothing else.`
+        }, {
+          role: 'user',
+          content: `User said: "${userMessage}"\nFriday replied: "${fridayReply.substring(0, 200)}"`
+        }]
+      })
+    });
+
+    if (!response.ok) return res.json({ facts: [] });
+    const data = await response.json();
+    const text = data.choices[0].message.content.trim();
+    try {
+      const facts = JSON.parse(text);
+      res.json({ facts: Array.isArray(facts) ? facts : [] });
+    } catch(e) { res.json({ facts: [] }); }
+  } catch(e) { res.json({ facts: [] }); }
 });
 
 app.post('/api/tts', auth, async (req, res) => {
