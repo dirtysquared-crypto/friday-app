@@ -650,17 +650,17 @@ function runBoot(){
           const t = sessionStorage.getItem('friday_token');
           if(t){ authToken=t; document.getElementById('login-overlay').style.display='none'; onLoggedIn(); }
           else { document.getElementById('login-overlay').style.display='flex'; }
-        }, 2000;
-      }, 1500;
+        }, 1200;
+      }, 900;
       return;
     }
     const lines = container.querySelectorAll('.boot-line');
     if(lines[i]){ lines[i].className = 'boot-line ok'; }
     progress.style.width = ((i+1)/bootChecks.length * 100) + '%';
     i++;
-    setTimeout(tick, 300);
+    setTimeout(tick, 220);
   }
-  setTimeout(tick, 2500);
+  setTimeout(tick, 1800);
 }
 
 window.addEventListener('load', ()=>{ runBoot(); startHex(); });
