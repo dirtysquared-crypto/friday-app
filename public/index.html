@@ -650,8 +650,8 @@ function runBoot(){
           const t = sessionStorage.getItem('friday_token');
           if(t){ authToken=t; document.getElementById('login-overlay').style.display='none'; onLoggedIn(); }
           else { document.getElementById('login-overlay').style.display='flex'; }
-        }, 1200;
-      }, 900;
+        }, 1200);
+      }, 900);
       return;
     }
     const lines = container.querySelectorAll('.boot-line');
