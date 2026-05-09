@@ -613,7 +613,7 @@ function runBoot(){
     const line = document.createElement('div');
     line.className = 'boot-line checking';
     line.innerHTML = `<span>${check}</span><span class="status"></span>`;
-    line.style.animation = `fadeIn 0.3s ${1.2 + idx * 0.18}s forwards`;
+    line.style.animation = `fadeIn 0.3s ${1.2 + idx * 0.4}s forwards`;
     container.appendChild(line);
   });
 
@@ -638,7 +638,7 @@ function runBoot(){
     const fem = voices.find(v=>v.name.includes('Female')||v.name.includes('Samantha')||v.name.includes('Karen')||v.name.includes('Victoria'));
     if(fem) u.voice = fem;
     speechSynthesis.speak(u);
-  }, 1500);
+  }, 3000;
 
   function tick(){
     if(i >= bootChecks.length){
@@ -650,17 +650,17 @@ function runBoot(){
           const t = sessionStorage.getItem('friday_token');
           if(t){ authToken=t; document.getElementById('login-overlay').style.display='none'; onLoggedIn(); }
           else { document.getElementById('login-overlay').style.display='flex'; }
-        }, 800);
-      }, 600);
+        }, 2000;
+      }, 1500;
       return;
     }
     const lines = container.querySelectorAll('.boot-line');
     if(lines[i]){ lines[i].className = 'boot-line ok'; }
     progress.style.width = ((i+1)/bootChecks.length * 100) + '%';
     i++;
-    setTimeout(tick, 180);
+    setTimeout(tick, 300);
   }
-  setTimeout(tick, 1400);
+  setTimeout(tick, 2500);
 }
 
 window.addEventListener('load', ()=>{ runBoot(); startHex(); });
