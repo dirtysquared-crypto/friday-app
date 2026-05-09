@@ -970,6 +970,8 @@ async function askGPT(userInput){
     appendHistory('assistant',reply);
     // Auto extract memorable facts in background — don't await, non-blocking
     extractAndSaveMemory(userInput, reply);
+    // Reminder detection
+checkForReminder(userInput);
     speak(reply);
   }catch(e){
     history.pop(); document.getElementById('ai-status').textContent='Error'; setThreat('nominal');
@@ -977,7 +979,61 @@ async function askGPT(userInput){
     const msg=e.message.includes('quota')||e.message.includes('insufficient')?"Out of API credits, Mr. Roberts.":e.message.includes('401')?"Auth error. Try refreshing.":"Hit a snag. Error: "+e.message;
     speak(msg);
   }
-}
+// ===== REMINDERS =====
+const activeReminders = [];
+function checkForReminder(input){
+  const text = input.toLowerCase();
+  const reminderPhrases = ['remind me','reminder','don\'t forget','dont forget'];
+  if(!reminderPhrases.some(p => text.includes(p))) return;
+  let ms = null;
+  const inMatch = text.match(/in\s+(\d+)\s*(minute|min|hour|hr)/);
+  const atMatch = text.match(/at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+  const dayMatch = text.match(/(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+  if(inMatch){
+    const amt = parseInt(inMatch[1]);
+    const unit = inMatch[2].startsWith('h') ? 3600000 : 60000;
+    ms = amt * unit;
+  } else if(dayMatch){
+    const days = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+    const target = days.indexOf(dayMatch[1].toLowerCase());
+    const now = new Date();
+    let diff = target - now.getDay();
+    if(diff <= 0) diff += 7;
+    const h = parseInt(dayMatch[2]);
+    const m = parseInt(dayMatch[3]||0);
+    const isPM = (dayMatch[4]||'').toLowerCase()==='pm';
+    const fire = new Date(now);
+    fire.setDate(now.getDate()+diff);
+    fire.setHours(isPM&&h<12?h+12:h, m, 0, 0);
+    ms = fire - now;
+  } else if(atMatch){
+    let h = parseInt(atMatch[1]);
+    const m = parseInt(atMatch[2]||0);
+    const isPM = (atMatch[3]||'').toLowerCase()==='pm';
+    if(isPM && h < 12) h += 12;
+    if(!isPM && h < 6) h += 12;
+    const fire = new Date();
+    fire.setHours(h, m, 0, 0);
+    if(fire <= new Date()) fire.setDate(fire.getDate()+1);
+    ms = fire - new Date();
+  }
+  if(!ms || ms <= 0) return;
+  const reminderLines = [
+    `Mr. Roberts, you asked me to remind you: `,
+    `Hey Fred — reminder: `,
+    `Boss, don't forget — `,
+    `Fred, your reminder: `,
+  ];
+  const pick = reminderLines[Math.floor(Math.random()*reminderLines.length)];
+  const topic = input.replace(/remind me (in \d+ (minutes?|hours?)|at [\d:apm]+|(monday|tuesday|wednesday|thursday|friday|saturday|sunday) at [\d:apm]+)\s*(to)?/i,'').trim() || 'something important';
+  setTimeout(()=>{
+    speak(pick + topic);
+    log(pick + topic, 'friday');
+    showResponse(pick + topic);
+  }, ms);
+  const mins = Math.round(ms/60000);
+  log(`Reminder set for ${mins} minute${mins!==1?'s':''} from now.`,'sys');
+}}
 
 // ===== LOCAL BRAIN =====
 function localBrain(input){
