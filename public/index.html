@@ -1035,14 +1035,20 @@ function checkForReminder(input){
   const pick = reminderLines[Math.floor(Math.random()*reminderLines.length)];
   const topic = input.replace(/remind me (in \d+ (minutes?|hours?)|at [\d:apm]+|(monday|tuesday|wednesday|thursday|friday|saturday|sunday) at [\d:apm]+)\s*(to)?/i,'').trim() || 'something important';
   setTimeout(()=>{
-    speak(pick + topic);
-    log(pick + topic, 'friday');
-    showResponse(pick + topic);
-  }, ms);
+  document.getElementById('boot-screen').style.display = 'none';
+  showResponse(pick + topic);
+  log(pick + topic, 'friday');
+  speak(pick + topic);
+  if(Notification.permission === 'granted'){
+    new Notification('F.R.I.D.A.Y.', {body: pick + topic, icon: '/icon.png'});
+  }
+}, ms);
   const mins = Math.round(ms/60000);
   log(`Reminder set for ${mins} minute${mins!==1?'s':''} from now.`,'sys');
 }}
-
+if(Notification.permission === 'default'){
+  Notification.requestPermission();
+}
 // ===== LOCAL BRAIN =====
 function localBrain(input){
   const q=input.toLowerCase().trim();
