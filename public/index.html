@@ -664,6 +664,13 @@ function runBoot(){
 }
 
 window.addEventListener('load', ()=>{ runBoot(); startHex(); });
+document.addEventListener('click', ()=>{ 
+  if(!window._audioUnlocked){ 
+    const ctx = new AudioContext(); 
+    ctx.resume(); 
+    window._audioUnlocked = true; 
+  } 
+}, {once: false});
 
 // ===== HEX STREAM =====
 function startHex(){
