@@ -942,6 +942,7 @@ function fallbackSpeak(text){
 
 // ===== GPT =====
 async function askGPT(userInput){
+  checkForReminder(userInput);
   setModeText('Thinking'); setThreat('thinking');
   document.getElementById('ai-status').textContent='Thinking'; showThinking();
   appendHistory('user',userInput);
