@@ -254,7 +254,7 @@ app.post('/api/tts', auth, async (req, res) => {
     const response = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'tts-1', input: text, voice, speed })
+      body: JSON.stringify({ model: 'tts-1-hd', input: text, voice, speed })
     });
     if (!response.ok) { const t = await response.text(); console.error('TTS fail:', t); throw new Error('TTS failed'); }
     const buf = Buffer.from(await response.arrayBuffer());
