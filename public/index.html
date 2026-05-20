@@ -563,7 +563,10 @@ body.basement .ctrl-btn:hover{background:rgba(255,106,0,0.15);color:#ff8844}
     </div>
 
     <div class="feed-panel">
-      <div class="feed-title">Friday Feed <span class="memory-badge" id="mem-badge">MEM: 0</span></div>
+      <div class="feed-title">Friday Feed <span class="memory-badge" id="mem-badge">MEM: 0</span> <button onclick="toggleMemoryViewer()" style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--c3);font-size:9px;font-family:'Orbitron',monospace;padding:2px 8px;cursor:pointer;margin-left:6px;letter-spacing:0.05em">VIEW MEM</button></div>
+      <div id="memory-viewer" style="display:none;margin-bottom:8px;max-height:160px;overflow-y:auto">
+        <div id="memory-list"></div>
+      </div>
       <div id="log"></div>
     </div>
 
@@ -734,7 +737,34 @@ async function loadMemory(){
   catch(e){ memory={}; }
 }
 async function saveMemoryItem(key,value){ memory[key]=value; updateMemBadge(); await api('/api/memory',{method:'POST',body:JSON.stringify({key,value})}); }
-function updateMemBadge(){ document.getElementById('mem-badge').textContent=`MEM: ${Object.keys(memory).length}`; }
+function updateMemBadge(){
+  document.getElementById('mem-badge').textContent=`MEM: ${Object.keys(memory).length}`;
+  if(document.getElementById('memory-viewer').style.display !== 'none') renderMemoryViewer();
+}
+
+function toggleMemoryViewer(){
+  const v = document.getElementById('memory-viewer');
+  v.style.display = v.style.display === 'none' ? 'block' : 'none';
+  if(v.style.display === 'block') renderMemoryViewer();
+}
+
+function renderMemoryViewer(){
+  const el = document.getElementById('memory-list');
+  const keys = Object.keys(memory);
+  if(keys.length === 0){ el.innerHTML = '<div style="font-size:12px;color:rgba(200,255,255,0.4);padding:4px 0">No memories stored yet.</div>'; return; }
+  el.innerHTML = keys.map(k => `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:4px 0;border-bottom:1px solid rgba(0,245,255,0.08);gap:8px">
+      <span style="font-size:12px;color:rgba(200,255,255,0.7);flex:1;line-height:1.4">${memory[k]}</span>
+      <button onclick="deleteMemory('${k}')" style="background:none;border:none;color:rgba(255,80,80,0.6);cursor:pointer;font-size:14px;flex-shrink:0;padding:0 4px">✕</button>
+    </div>
+  `).join('');
+}
+
+async function deleteMemory(key){
+  delete memory[key];
+  updateMemBadge();
+  try{ await api('/api/memory/'+encodeURIComponent(key), {method:'DELETE'}); }catch(e){}
+}
 async function clearAll(){
   history = [];
   await api('/api/history',{method:'DELETE'});

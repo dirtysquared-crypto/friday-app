@@ -282,6 +282,14 @@ app.post('/api/memory', auth, async (req, res) => {
   catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+app.delete('/api/memory/:key', auth, async (req, res) => {
+  if (!supabase) return res.json({ success: false });
+  try {
+    await supabase.from('friday_memory').delete().eq('user_id','freddy').eq('key', decodeURIComponent(req.params.key));
+    res.json({ success: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.delete('/api/memory', auth, async (req, res) => {
   if (!supabase) return res.json({ success: false });
   try { await supabase.from('friday_memory').delete().eq('user_id','freddy'); res.json({ success: true }); }
