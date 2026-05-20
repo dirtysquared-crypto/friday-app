@@ -543,7 +543,7 @@ body.basement .ctrl-btn:hover{background:rgba(255,106,0,0.15);color:#ff8844}
     <div class="voice-panel">
       <div class="feed-title">Friday Voice</div>
       <div class="voice-row">
-        <select class="voice-select" id="voice-select" onchange="previewVoice()">
+        <select class="voice-select" id="voice-select">
           <option value="nova">Nova - Female, Friendly</option>
           <option value="shimmer">Shimmer - Female, Soft</option>
           <option value="alloy">Alloy - Neutral, Balanced</option>
@@ -1164,7 +1164,7 @@ function toggleWake(){
     askGPT(t);
   };
 
-  recognition.onerror=()=>{ clearTimeout(micTimeout); resetMic(); log('Mic error — tap mic to try again.','sys'); };
+  recognition.onerror=()=>{ clearTimeout(micTimeout); resetMic(); };
   recognition.onend=()=>{ clearTimeout(micTimeout); resetMic(); };
 
   try{ recognition.start(); }
