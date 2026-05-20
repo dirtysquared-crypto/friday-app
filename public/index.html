@@ -1121,12 +1121,63 @@ document.addEventListener('DOMContentLoaded',()=>{ const box=document.getElement
 function quickCmd(text){ log('You: '+text,'user'); const local=localBrain(text); if(local){ speak(local); return; } askGPT(text); }
 
 // ===== VOICE =====
+// ===== AUDIO CUES =====
+let audioCtx = null;
+function getAudioCtx(){
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playTone(freq, duration, type='sine', vol=0.15, fadeOut=true){
+  try{
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    if(fadeOut) gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  }catch(e){}
+}
+
+function playMicOn(){
+  // Two ascending tones — clean activate sound
+  playTone(880, 0.08, 'sine', 0.12);
+  setTimeout(()=>playTone(1320, 0.12, 'sine', 0.1), 80);
+}
+
+function playMicOff(){
+  // Two descending tones — sent/received sound
+  playTone(1320, 0.08, 'sine', 0.12);
+  setTimeout(()=>playTone(880, 0.12, 'sine', 0.1), 80);
+}
+
+function playThinking(){
+  // Soft single pulse — processing
+  playTone(660, 0.15, 'sine', 0.08);
+}
+
+// Reactor pulse while talking
+function startTalkingPulse(){
+  const reactor = document.getElementById('reactor');
+  if(reactor) reactor.style.animation = 'coreActive 0.4s ease-in-out infinite';
+}
+function stopTalkingPulse(){
+  const reactor = document.getElementById('reactor');
+  if(reactor) reactor.style.animation = 'corePulse 2.5s ease-in-out infinite';
+}
+
 function resetMic(){
   listening = false;
   if(recognition){ try{ recognition.abort(); }catch(e){} recognition = null; }
   document.getElementById('wake-btn').classList.remove('mic-active');
   document.getElementById('wake-indicator').classList.remove('show');
   setModeText('Standby');
+  stopTalkingPulse();
 }
 
 let micTimeout = null;
@@ -1147,9 +1198,11 @@ function toggleWake(){
     setModeText('Listening');
     document.getElementById('wake-btn').classList.add('mic-active');
     document.getElementById('wake-indicator').classList.add('show');
+    playMicOn();
+    startTalkingPulse();
     // Auto-stop after 8 seconds if nothing heard
     micTimeout = setTimeout(()=>{
-      if(listening){ resetMic(); log('Mic timed out.','sys'); }
+      if(listening){ resetMic(); }
     }, 8000);
   };
 
@@ -1157,8 +1210,11 @@ function toggleWake(){
     clearTimeout(micTimeout);
     const t=e.results[0][0].transcript.trim();
     log('Heard: '+t,'user');
+    playMicOff();
+    stopTalkingPulse();
     resetMic();
     setModeText('Thinking');
+    playThinking();
     const local=localBrain(t);
     if(local){ speak(local); return; }
     askGPT(t);
