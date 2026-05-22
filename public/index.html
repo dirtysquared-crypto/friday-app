@@ -1042,6 +1042,7 @@ async function askGPT(userInput){
     const msg=e.message.includes('quota')||e.message.includes('insufficient')?"Out of API credits, Mr. Roberts.":e.message.includes('401')?"Auth error. Try refreshing.":"Hit a snag. Error: "+e.message;
     speak(msg);
   }
+}
 // ===== REMINDERS =====
 const activeReminders = [];
 function checkForReminder(input){
@@ -1405,7 +1406,6 @@ function startFriday(){
 }
 
 setInterval(()=>{ document.getElementById('net').textContent=navigator.onLine?'Connected':'Offline'; },2000);
-}
 </script>
 </body>
 </html>
