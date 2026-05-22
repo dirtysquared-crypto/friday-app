@@ -1045,8 +1045,6 @@ async function askGPT(userInput){
     appendHistory('assistant',reply);
     // Auto extract memorable facts in background — don't await, non-blocking
     extractAndSaveMemory(userInput, reply);
-    // Reminder detection
-checkForReminder(userInput);
     speak(reply);
   }catch(e){
     history.pop(); document.getElementById('ai-status').textContent='Error'; setThreat('nominal');
@@ -1057,62 +1055,101 @@ checkForReminder(userInput);
 // ===== REMINDERS =====
 const activeReminders = [];
 function checkForReminder(input){
-  const text = input.toLowerCase();
-  const reminderPhrases = ['remind me','reminder','don\'t forget','dont forget'];
+  const text = input.toLowerCase().trim();
+  const reminderPhrases = ['remind me','reminder','don\'t forget','dont forget','butt in','interrupt me'];
   if(!reminderPhrases.some(p => text.includes(p))) return;
+
   let ms = null;
+  let timeDesc = '';
+
+  // "in X minutes/hours"
   const inMatch = text.match(/in\s+(\d+)\s*(minute|min|hour|hr)/);
-  const atMatch = text.match(/at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+  // "at 9pm" or "at 9:00 pm" or "at 9:00"
+  const atMatch = text.match(/at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i) ||
+                  text.match(/at\s+(\d{1,2})(?::(\d{2}))\s*/i);
+  // "tonight at 9" "tonight at 9pm"
+  const tonightMatch = text.match(/tonight\s+at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+  // day of week
   const dayMatch = text.match(/(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+
   if(inMatch){
     const amt = parseInt(inMatch[1]);
     const unit = inMatch[2].startsWith('h') ? 3600000 : 60000;
     ms = amt * unit;
+    timeDesc = `in ${amt} ${inMatch[2].startsWith('h') ? 'hour' : 'minute'}${amt !== 1 ? 's' : ''}`;
+  } else if(tonightMatch){
+    let h = parseInt(tonightMatch[1]);
+    const m = parseInt(tonightMatch[2]||0);
+    const ampm = (tonightMatch[3]||'').toLowerCase();
+    if(ampm === 'am'){ if(h === 12) h = 0; }
+    else if(ampm === 'pm'){ if(h < 12) h += 12; }
+    else if(h < 12) h += 12; // assume PM for tonight
+    const fire = new Date(); fire.setHours(h, m, 0, 0);
+    if(fire <= new Date()) fire.setDate(fire.getDate()+1);
+    ms = fire - new Date();
+    timeDesc = `at ${tonightMatch[1]}${tonightMatch[2]?':'+tonightMatch[2]:''}${ampm||'pm'}`;
   } else if(dayMatch){
     const days = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
     const target = days.indexOf(dayMatch[1].toLowerCase());
-    const now = new Date();
-    let diff = target - now.getDay();
+    const now = new Date(); let diff = target - now.getDay();
     if(diff <= 0) diff += 7;
-    const h = parseInt(dayMatch[2]);
-    const m = parseInt(dayMatch[3]||0);
+    const h = parseInt(dayMatch[2]); const m = parseInt(dayMatch[3]||0);
     const isPM = (dayMatch[4]||'').toLowerCase()==='pm';
     const fire = new Date(now);
     fire.setDate(now.getDate()+diff);
     fire.setHours(isPM&&h<12?h+12:h, m, 0, 0);
     ms = fire - now;
+    timeDesc = `${dayMatch[1]} at ${dayMatch[2]}${dayMatch[3]?':'+dayMatch[3]:''}`;
   } else if(atMatch){
     let h = parseInt(atMatch[1]);
     const m = parseInt(atMatch[2]||0);
-    const isPM = (atMatch[3]||'').toLowerCase()==='pm';
-    if(isPM && h < 12) h += 12;
-    if(!isPM && h < 6) h += 12;
-    const fire = new Date();
-    fire.setHours(h, m, 0, 0);
+    const ampm = (atMatch[3]||'').toLowerCase();
+    if(ampm === 'am'){ if(h === 12) h = 0; }
+    else if(ampm === 'pm'){ if(h < 12) h += 12; }
+    else if(h < 6) h += 12; // if no am/pm and hour < 6, assume PM
+    const fire = new Date(); fire.setHours(h, m, 0, 0);
     if(fire <= new Date()) fire.setDate(fire.getDate()+1);
     ms = fire - new Date();
+    timeDesc = `at ${atMatch[1]}${atMatch[2]?':'+atMatch[2]:''}${ampm||''}`;
   }
+
   if(!ms || ms <= 0) return;
+
+  // Extract topic — remove reminder trigger words and time phrases
+  let topic = input
+    .replace(/remind me|reminder|don't forget|dont forget|butt in|interrupt me/gi, '')
+    .replace(/in\s+\d+\s*(minute|min|hour|hr)s?/gi, '')
+    .replace(/at\s+\d{1,2}(:\d{2})?\s*(am|pm)?/gi, '')
+    .replace(/tonight\s+at\s+\d{1,2}(:\d{2})?\s*(am|pm)?/gi, '')
+    .replace(/(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+at\s+\d{1,2}(:\d{2})?\s*(am|pm)?/gi, '')
+    .replace(/^[\s,to-]+|[\s,]+$/g, '')
+    .trim();
+
+  if(!topic || topic.length < 3) topic = 'something important';
+
   const reminderLines = [
-    `Mr. Roberts, you asked me to remind you: `,
-    `Hey Fred — reminder: `,
-    `Boss, don't forget — `,
-    `Fred, your reminder: `,
+    `Hey Fred — `,
+    `Mr. Roberts — `,
+    `Fred, heads up — `,
+    `Interrupting — `,
   ];
   const pick = reminderLines[Math.floor(Math.random()*reminderLines.length)];
-  const topic = input.replace(/remind me (in \d+ (minutes?|hours?)|at [\d:apm]+|(monday|tuesday|wednesday|thursday|friday|saturday|sunday) at [\d:apm]+)\s*(to)?/i,'').trim() || 'something important';
+  const fullMsg = pick + topic;
+
   setTimeout(()=>{
-  document.getElementById('boot-screen').style.display = 'none';
-  showResponse(pick + topic);
-  log(pick + topic, 'friday');
-  speak(pick + topic);
-  if(Notification.permission === 'granted'){
-    new Notification('F.R.I.D.A.Y.', {body: pick + topic, icon: '/icon.png'});
-  }
-}, ms);
+    showResponse(fullMsg);
+    log(fullMsg, 'friday');
+    speak(fullMsg);
+    if(Notification.permission === 'granted'){
+      new Notification('F.R.I.D.A.Y.', {body: fullMsg, icon: '/icon.png'});
+    }
+  }, ms);
+
   const mins = Math.round(ms/60000);
-  log(`Reminder set for ${mins} minute${mins!==1?'s':''} from now.`,'sys');
-}}
+  const displayTime = mins < 60 ? `${mins} minute${mins!==1?'s':''}` : timeDesc;
+  log(`✓ Reminder set — ${displayTime}: "${topic}"`, 'sys');
+}
+
 if(Notification.permission === 'default'){
   Notification.requestPermission();
 }
