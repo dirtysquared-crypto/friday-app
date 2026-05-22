@@ -178,7 +178,7 @@ ${memBlock}`;
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-5',
-      max_tokens: 1024,
+      max_tokens: 2048,
       system: SYSTEM,
       messages: (messages||[]).map(m => ({ role: m.role, content: m.content }))
     });

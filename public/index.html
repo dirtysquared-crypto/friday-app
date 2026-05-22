@@ -733,8 +733,8 @@ async function doLogin(){
 
 async function onLoggedIn(){
   await loadMemory();
-  try{ await api('/api/history',{method:'DELETE'}); }catch(e){}
-  history = [];
+  // Load existing history so Friday remembers the conversation
+  try{ const r=await api('/api/history'); const d=await r.json(); history=d.messages||[]; }catch(e){ history=[]; }
   selectedVoice = localStorage.getItem('friday_voice') || 'nova';
   document.getElementById('voice-select').value = selectedVoice;
   updateVoiceLabel();
