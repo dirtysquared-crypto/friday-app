@@ -9,10 +9,26 @@ app.use(express.static('public'));
 
 const APP_PASSWORD = 'friday123';
 const OPENAI_KEY = (process.env.FRIDAY_KEY || '').trim();
+const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY || '').trim();
 
 console.log('Friday starting...');
 console.log('OpenAI key length:', OPENAI_KEY.length);
-console.log('OpenAI key prefix:', OPENAI_KEY.substring(0, 10));
+console.log('Anthropic key length:', ANTHROPIC_KEY.length);
+console.log('Anthropic key prefix:', ANTHROPIC_KEY.substring(0, 10));
+
+// Initialize Anthropic at startup
+let anthropic = null;
+try {
+  const Anthropic = require('@anthropic-ai/sdk');
+  if (ANTHROPIC_KEY) {
+    anthropic = new Anthropic({ apiKey: ANTHROPIC_KEY });
+    console.log('Anthropic client initialized.');
+  } else {
+    console.warn('ANTHROPIC_API_KEY missing — Claude brain disabled.');
+  }
+} catch(e) {
+  console.error('Anthropic init error:', e.message);
+}
 
 let supabase = null;
 try {
@@ -158,8 +174,7 @@ DEEPER CONVERSATION — be an active participant, not just a responder:
 ${memBlock}`;
 
   try {
-    const Anthropic = require('@anthropic-ai/sdk');
-    const anthropic = new Anthropic({ apiKey: (process.env.ANTHROPIC_API_KEY || '').trim() });
+    if (!anthropic) throw new Error('Claude brain not initialized — check ANTHROPIC_API_KEY in Railway variables.');
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
