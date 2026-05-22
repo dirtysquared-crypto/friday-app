@@ -670,16 +670,6 @@ function runBoot(){
     speechSynthesis.speak(u);
   }, 3000);
 
-  // Speak boot line after short delay using fallback TTS (no auth yet)
-  setTimeout(()=>{
-    const u = new SpeechSynthesisUtterance(bootLine);
-    u.rate = 1.0; u.pitch = 1.05;
-    const voices = speechSynthesis.getVoices();
-    const fem = voices.find(v=>v.name.includes('Female')||v.name.includes('Samantha')||v.name.includes('Karen')||v.name.includes('Victoria'));
-    if(fem) u.voice = fem;
-    speechSynthesis.speak(u);
-  }, 3000);
-
   function tick(){
     if(i >= bootChecks.length){
       progress.style.width = '100%';
@@ -1415,6 +1405,7 @@ function startFriday(){
 }
 
 setInterval(()=>{ document.getElementById('net').textContent=navigator.onLine?'Connected':'Offline'; },2000);
+}
 </script>
 </body>
 </html>
