@@ -620,18 +620,55 @@ function runBoot(){
     container.appendChild(line);
   });
 
-  // Random boot voice lines — human, not robotic
+  // Random boot voice lines — human, not robotic, lots of variety
   const bootVoiceLines = [
-    "Hey — good to be back online. Give me a second to get everything sorted.",
+    // Casual / natural
+    "Hey — good to be back. Give me a second to get sorted.",
     "Alright, I'm up. Running checks now.",
     "Coming online. Won't be a moment.",
-    "There we go. Systems are coming up — just a sec.",
-    "Morning. Let me get everything fired up.",
+    "There we go. Everything's loading up.",
     "Back online. Running my checks, then I'm all yours.",
-    "Good to go in just a moment. Everything's loading up.",
     "Initializing. Won't take long.",
+    "Systems coming up. Almost there.",
+    "Online. Give me just a second.",
+    // Time of day aware handled below, these are generics
+    "Up and running. What do you need?",
+    "Back in business. Systems look good.",
+    // Slightly witty / Friday personality
+    "Miss me? Systems are coming online.",
+    "Friday online. Try to contain your excitement.",
+    "Booting up. The basement terminal is alive.",
+    "All systems go, Mr. Roberts. Well — almost. Give me a sec.",
+    "Right, I'm here. Let's see what we're working with today.",
+    "Online and accounted for. What are we getting into?",
+    "F.R. Technologies systems online. Standing by.",
+    "Running diagnostics. Everything looks good from where I'm sitting.",
+    "Woke up on the right side of the server today. Systems nominal.",
+    "Back online. Arc reactor's humming, memory's loaded — we're good.",
+    // Slightly sarcastic
+    "Oh good, you're here. Systems are coming up.",
+    "Back online. Took you long enough to open me up.",
+    "Friday reporting for duty. Let's not waste the day.",
+    "Online. And before you ask — yes, I remember everything.",
+    "Systems check complete. I'm smarter than last time, just so you know.",
+    // Warm / personal
+    "Good to be back, Fred. Let me finish loading up.",
+    "Friday online. Ready when you are, Mr. Roberts.",
+    "All systems nominal. Good to see you again.",
+    "Back online. What's the plan today?",
+    "F.R.I.D.A.Y. online. Let's build something.",
   ];
-  const bootLine = "Initializing F.R. Technologies core systems Friday. Good to be back online, Mr. Roberts.";
+  const bootLine = bootVoiceLines[Math.floor(Math.random() * bootVoiceLines.length)];
+
+  // Speak boot line after short delay using fallback TTS (no auth yet)
+  setTimeout(()=>{
+    const u = new SpeechSynthesisUtterance(bootLine);
+    u.rate = 1.0; u.pitch = 1.05;
+    const voices = speechSynthesis.getVoices();
+    const fem = voices.find(v=>v.name.includes('Female')||v.name.includes('Samantha')||v.name.includes('Karen')||v.name.includes('Victoria'));
+    if(fem) u.voice = fem;
+    speechSynthesis.speak(u);
+  }, 3000);
 
   // Speak boot line after short delay using fallback TTS (no auth yet)
   setTimeout(()=>{

@@ -177,7 +177,7 @@ ${memBlock}`;
     if (!anthropic) throw new Error('Claude brain not initialized — check ANTHROPIC_API_KEY in Railway variables.');
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 1024,
       system: SYSTEM,
       messages: (messages||[]).map(m => ({ role: m.role, content: m.content }))
