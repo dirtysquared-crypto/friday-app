@@ -158,35 +158,18 @@ DEEPER CONVERSATION — be an active participant, not just a responder:
 ${memBlock}`;
 
   try {
-    const fetch = (await import('node-fetch')).default;
-    const key = (process.env.FRIDAY_KEY || "").trim().split("\n")[0].split("\r")[0];
-    console.log('Using key length:', key.length, 'prefix:', key.substring(0,10));
-    const response = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        tools: [{ type: 'web_search_preview' }],
-        input: [
-          { role: 'system', content: SYSTEM },
-          ...(messages||[]).map(m => ({ role: m.role, content: m.content }))
-        ]
-      })
+    const Anthropic = require('@anthropic-ai/sdk');
+    const anthropic = new Anthropic({ apiKey: (process.env.ANTHROPIC_API_KEY || '').trim() });
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1024,
+      system: SYSTEM,
+      messages: (messages||[]).map(m => ({ role: m.role, content: m.content }))
     });
-    if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'OpenAI error'); }
-    const data = await response.json();
-    // Responses API returns output array
-    let reply = '';
-    if (data.output_text) {
-      reply = data.output_text.trim();
-    } else if (data.output) {
-      const textItem = data.output.find(o => o.type === 'message');
-      if (textItem && textItem.content) {
-        const textContent = textItem.content.find(c => c.type === 'output_text' || c.type === 'text');
-        reply = textContent ? textContent.text.trim() : '';
-      }
-    }
-    if (!reply) reply = "I ran a search but couldn't pull a clear answer on that one, Fred.";
+
+    let reply = response.content[0].text.trim();
+    if (!reply) reply = "I ran into an issue there, Fred. Try again.";
     console.log('Reply preview:', reply.substring(0, 200));
     res.json({ reply });
   } catch(e) { console.error('Chat error:', e.message); res.status(500).json({ error: e.message }); }
